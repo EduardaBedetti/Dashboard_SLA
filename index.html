@@ -1,0 +1,239 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard SLA de Tickets</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero">
+      <div class="panel hero-card">
+        <span class="eyebrow">Dashboard operacional</span>
+        <h1>Painel de SLA para tickets</h1>
+        <p>
+          Consolide exportações em CSV, acompanhe volumes, SLAs, alertas operacionais e distribua o trabalho por área,
+          cliente e janela de atendimento em um único painel.
+        </p>
+        <div class="hero-actions">
+          <button id="selectFilesButton" class="button primary" type="button">Selecionar CSVs</button>
+          <button id="clearDataButton" class="button secondary" type="button">Limpar dados</button>
+          <button id="exportCsvButton" class="button ghost" type="button">Exportar filtrados</button>
+        </div>
+        <div class="hero-meta">
+          <span id="fileCountLabel">Nenhum arquivo carregado</span>
+          <span id="rowCountLabel">0 tickets</span>
+        </div>
+      </div>
+
+      <aside class="panel sidebar-card">
+        <div class="sidebar-section">
+          <h2>Importação</h2>
+          <p>Arraste seus arquivos CSV exportados do Google Sheets ou selecione manualmente.</p>
+        </div>
+        <label id="dropzone" class="dropzone" for="fileInput">
+          <input class="hidden-input" id="fileInput" type="file" accept=".csv,text/csv" multiple>
+          <span class="dropzone-title">Solte os CSVs aqui</span>
+          <span class="dropzone-subtitle">ou clique para buscar os arquivos</span>
+        </label>
+        <div class="sidebar-section">
+          <h3>Arquivos importados</h3>
+          <div id="fileImportList" class="import-list"></div>
+        </div>
+        <div class="sidebar-section sidebar-actions">
+          <button id="clearFiltersButton" class="button secondary" type="button">Limpar filtros</button>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel metrics-panel">
+      <div class="section-heading">
+        <div>
+          <span class="section-kicker">Resumo geral</span>
+          <h2>Indicadores principais</h2>
+        </div>
+        <span id="lastUpdatedLabel" class="timestamp">Sem atualização</span>
+      </div>
+      <div class="metrics-grid">
+        <article class="metric-card total">
+          <span class="metric-label">Total de tickets</span>
+          <strong id="metricTotal">0</strong>
+          <small>Tickets consolidados no período filtrado</small>
+        </article>
+        <article class="metric-card resolved">
+          <span class="metric-label">Resolvidos</span>
+          <strong id="metricResolved">0</strong>
+          <small>Tickets concluídos com ou sem atraso</small>
+        </article>
+        <article class="metric-card overdue">
+          <span class="metric-label">Atrasados</span>
+          <strong id="metricOverdue">0</strong>
+          <small>Tickets fora da janela de SLA</small>
+        </article>
+        <article class="metric-card ontime">
+          <span class="metric-label">No prazo</span>
+          <strong id="metricOnTime">0</strong>
+          <small>Tickets ainda dentro do prazo</small>
+        </article>
+        <article class="metric-card atrisk">
+          <span class="metric-label">Em risco</span>
+          <strong id="metricAtRisk">0</strong>
+          <small>Prazo crítico considerando a janela operacional</small>
+        </article>
+        <article class="metric-card sla">
+          <span class="metric-label">SLA no prazo</span>
+          <strong id="metricSla">0%</strong>
+          <small>Percentual de tickets concluídos no prazo</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="filters-layout">
+      <section class="panel filters-panel">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">Exploração</span>
+            <h2>Filtros</h2>
+          </div>
+          <p>Refine os dados por área, cliente, status e período.</p>
+        </div>
+        <div class="filters-grid">
+          <label class="field">
+            <span>Área</span>
+            <select id="areaFilter">
+              <option value="">Todas</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Cliente</span>
+            <select id="clientFilter">
+              <option value="">Todos</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Status</span>
+            <select id="statusFilter">
+              <option value="">Todos</option>
+            </select>
+          </label>
+          <label class="field field-search">
+            <span>Busca</span>
+            <input id="searchFilter" type="search" placeholder="Ticket, cliente, área...">
+          </label>
+          <label class="field">
+            <span>Data inicial</span>
+            <input id="startDateFilter" type="date">
+          </label>
+          <label class="field">
+            <span>Data final</span>
+            <input id="endDateFilter" type="date">
+          </label>
+        </div>
+      </section>
+
+      <section class="panel insights-panel">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">Leituras</span>
+            <h2>Mensagens e alertas</h2>
+          </div>
+        </div>
+        <div id="messages" class="message-stack"></div>
+        <div class="insights-grid">
+          <article class="insight-card">
+            <h3>Distribuição por área</h3>
+            <p id="debugAreaBreakdown" class="insight-copy">Sem dados carregados.</p>
+          </article>
+          <article class="insight-card">
+            <h3>Resumo do filtro</h3>
+            <p id="summaryText" class="insight-copy">Importe um ou mais CSVs para começar.</p>
+          </article>
+        </div>
+        <div class="mini-stats">
+          <div>
+            <span>Total bruto</span>
+            <strong id="debugAllRecordsTotal">0</strong>
+          </div>
+          <div>
+            <span>Total filtrado</span>
+            <strong id="debugFilteredTotal">0</strong>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="content-grid">
+      <section class="panel chart-panel">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">Visual</span>
+            <h2>Status dos tickets</h2>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="statusChart"></canvas>
+          <div id="statusChartEmpty" class="chart-empty-state">Importe arquivos para visualizar o gráfico.</div>
+        </div>
+      </section>
+
+      <section class="panel alerts-panel">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">Operação</span>
+            <h2>Alertas prioritários</h2>
+          </div>
+        </div>
+        <div id="alertList" class="stack-list empty-state-inline">Nenhum alerta por enquanto.</div>
+      </section>
+
+      <section class="panel windows-panel">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">Janelas</span>
+            <h2>Monitoramento por frente</h2>
+          </div>
+        </div>
+        <div id="windowSummaryList" class="stack-list empty-state-inline">As janelas operacionais aparecerão aqui.</div>
+      </section>
+    </section>
+
+    <section class="panel table-panel">
+      <div class="section-heading">
+        <div>
+          <span class="section-kicker">Detalhamento</span>
+          <h2>Tickets consolidados</h2>
+          <p id="tableSubtitle">Os registros importados aparecerão nesta tabela.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="ticket">Ticket</th>
+              <th class="sortable" data-sort="clientDisplay">Cliente</th>
+              <th class="sortable" data-sort="areaDisplay">Área</th>
+              <th class="sortable" data-sort="openedDate">Data abertura</th>
+              <th class="sortable" data-sort="dueDate">Data limite</th>
+              <th class="sortable" data-sort="slaCategory">SLA</th>
+              <th class="sortable" data-sort="statusDisplay">Status</th>
+              <th class="sortable" data-sort="operationalPriority">Classificação operacional</th>
+              <th class="sortable" data-sort="resolvedDate">Data resolução</th>
+              <th class="sortable" data-sort="daysIndicatorValue">Dias restantes/atraso</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr>
+              <td colspan="10" class="empty-state">Nenhum dado carregado ainda.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

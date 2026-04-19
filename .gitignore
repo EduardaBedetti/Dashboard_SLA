@@ -1,0 +1,15 @@
+.DS_Store
+Thumbs.db
+
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+v2/.venv/
+v2/.deps/
+v2/.pkg/
+v2/__pycache__/
+v2/token.json
+v2/credentials.json
+v2/*.log
