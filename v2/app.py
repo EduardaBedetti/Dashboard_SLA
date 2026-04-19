@@ -85,19 +85,25 @@ def main() -> None:
         "Versao em Python com pandas + Google Sheets. O fluxo segue o padrao de autenticacao do quickstart oficial "
         "do Google Sheets API e troca os CSVs por ranges lidos direto da planilha."
     )
+    using_cloud_secrets = "gcp_service_account" in st.secrets
 
     with st.sidebar:
         st.header("Conexao Google Sheets")
-        credentials_path = st.text_input(
-            "Arquivo de credenciais",
-            value="credentials.json",
-            help="Use o credentials.json do OAuth desktop ou um service account JSON.",
-        )
-        token_path = st.text_input(
-            "Arquivo de token",
-            value="token.json",
-            help="No fluxo OAuth, esse arquivo sera criado na primeira autenticacao.",
-        )
+        if using_cloud_secrets:
+            st.success("Service account carregada via st.secrets.")
+            credentials_path = "credentials.json"
+            token_path = "token.json"
+        else:
+            credentials_path = st.text_input(
+                "Arquivo de credenciais",
+                value="credentials.json",
+                help="Localmente, use o credentials.json do OAuth desktop ou um service account JSON.",
+            )
+            token_path = st.text_input(
+                "Arquivo de token",
+                value="token.json",
+                help="No fluxo OAuth local, esse arquivo sera criado na primeira autenticacao.",
+            )
         sources_text = st.text_area(
             "Links da planilha",
             value=st.session_state.get("sources_text", DEFAULT_SOURCES),
@@ -136,6 +142,13 @@ def main() -> None:
 **Formato avancado opcional**
 
 `Pluggy|https://docs.google.com/spreadsheets/d/SEU_ID/edit#gid=0|Tickets!A:Z`
+            """
+        )
+        st.markdown(
+            """
+**Deploy simples no Streamlit Cloud**
+
+Use `st.secrets` com uma `service_account` e compartilhe a planilha com o e-mail dessa conta.
             """
         )
         return
@@ -265,12 +278,9 @@ def main() -> None:
     with st.expander("Como autenticar no Google Sheets"):
         st.markdown(
             """
-1. Ative a Google Sheets API no Google Cloud Console.
-2. Gere um `credentials.json` do tipo **Desktop app** para o fluxo OAuth mostrado no quickstart oficial.
-3. Coloque o arquivo na pasta da `v2` ou informe o caminho completo na barra lateral.
-4. Na primeira execucao, o app vai abrir a autorizacao e criar o `token.json`.
-
-Se preferir, voce tambem pode usar um `service_account.json` e compartilhar a planilha com o email da service account.
+1. No deploy, prefira `service_account` via `st.secrets`.
+2. Localmente, voce ainda pode usar `credentials.json` no fluxo OAuth.
+3. Se usar `service_account`, compartilhe a planilha com o e-mail da conta de servico.
             """
         )
 

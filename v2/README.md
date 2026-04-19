@@ -70,18 +70,50 @@ As dependencias usadas pela v2 estao em `requirements.txt`:
 - `google-auth-httplib2`
 - `google-auth-oauthlib`
 
-### 5. Gerar o arquivo de credenciais do Google
+### 5. Credenciais do Google
 
-Voce precisa de um destes arquivos:
+#### Opcao mais simples para deploy no Streamlit Cloud
+
+Use uma **service account** e salve o JSON dela em `st.secrets`.
+
+Passos:
+
+1. Crie uma service account no Google Cloud.
+2. Gere a chave JSON.
+3. Compartilhe a planilha com o e-mail da service account, com permissao de leitura.
+4. No Streamlit Cloud, abra o app e va em:
+   `App settings > Secrets`
+5. Cole algo assim:
+
+```toml
+[gcp_service_account]
+type = "service_account"
+project_id = "seu-projeto"
+private_key_id = "..."
+private_key = """-----BEGIN PRIVATE KEY-----
+SUA_CHAVE_AQUI
+-----END PRIVATE KEY-----"""
+client_email = "nome-da-service-account@seu-projeto.iam.gserviceaccount.com"
+client_id = "..."
+auth_uri = "https://accounts.google.com/o/oauth2/auth"
+token_uri = "https://oauth2.googleapis.com/token"
+auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
+client_x509_cert_url = "https://www.googleapis.com/robot/v1/metadata/x509/..."
+universe_domain = "googleapis.com"
+```
+
+Nesse caso, a app usa `st.secrets["gcp_service_account"]` automaticamente e voce nao precisa de `credentials.json` no repositório.
+
+#### Opcao local para desenvolvimento
+
+Localmente, voce ainda pode usar:
 
 - `credentials.json` para OAuth Desktop App
-- `service_account.json` para conta de servico
+- `service_account.json` como arquivo local
 
-Para o fluxo mais simples, siga o quickstart oficial do Google Sheets API e gere um `credentials.json` de **Desktop app**:
+Quickstart oficial:
 
 - https://developers.google.com/workspace/sheets/api/quickstart/python
-
-Depois, coloque o arquivo dentro da pasta `v2` ou informe o caminho completo dele no painel lateral da app.
 
 ### 6. Rodar a aplicacao
 
@@ -115,11 +147,10 @@ Abra esse endereco no navegador.
 
 Na aplicacao, preencha:
 
-1. `Arquivo de credenciais`
-2. `Arquivo de token`
-3. `Fontes da planilha`
+1. `Arquivo de credenciais` e `Arquivo de token` apenas no uso local
+2. `Links da planilha`
 
-O `token.json` sera criado automaticamente na primeira autenticacao quando voce usar OAuth.
+O `token.json` sera criado automaticamente na primeira autenticacao quando voce usar OAuth local.
 
 ### 9. Carregar as fontes
 
@@ -149,9 +180,9 @@ streamlit run app.py
 - tela abre mas nao carrega dados:
   confira se a URL/ID da planilha e o `range` estao corretos.
 - erro de permissao no Google Sheets:
-  confirme se a conta autenticada tem acesso a planilha.
-- usando `service_account.json`:
-  compartilhe a planilha com o email da conta de servico.
+  confirme se a conta autenticada, ou a service account, tem acesso a planilha.
+- Streamlit Cloud nao encontra `credentials.json`:
+  use `st.secrets` com `gcp_service_account` em vez de subir o JSON no GitHub.
 
 ## Formato das fontes
 
@@ -195,8 +226,8 @@ No modo simples, o nome da aba vira a referencia principal da fonte.
 
 Esta v2 suporta dois cenarios:
 
-- `credentials.json` do OAuth Desktop App, com criacao automatica do `token.json`
-- `service_account.json`, desde que a planilha tenha sido compartilhada com a conta de servico
+- `st.secrets["gcp_service_account"]` para deploy simples no Streamlit Cloud
+- `credentials.json` do OAuth Desktop App para uso local
 
 ## Referencias oficiais
 

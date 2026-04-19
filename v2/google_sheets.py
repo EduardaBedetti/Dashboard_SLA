@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Iterable
 
 import pandas as pd
+import streamlit as st
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
@@ -51,10 +52,16 @@ def load_credentials(credentials_path: str | Path, token_path: str | Path) -> Cr
     credentials_path = Path(credentials_path)
     token_path = Path(token_path)
 
+    if "gcp_service_account" in st.secrets:
+        return service_account.Credentials.from_service_account_info(
+            dict(st.secrets["gcp_service_account"]),
+            scopes=SCOPES,
+        )
+
     if not credentials_path.exists():
         raise FileNotFoundError(
             f"Arquivo de credenciais nao encontrado: {credentials_path}. "
-            "Baixe o credentials.json no Google Cloud Console."
+            "Para deploy no Streamlit Cloud, configure uma service account em st.secrets."
         )
 
     with credentials_path.open("r", encoding="utf-8") as handle:
